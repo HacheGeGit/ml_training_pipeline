@@ -1,0 +1,30 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# DataFrames
+DataFrames/*
+!DataFrames/.gitkeep
+
+# Logs
+logs/*
+!logs/.gitkeep
+
+# Model_data
+Model_data/*
+!Model_data/.gitkeep
+
+# Generated models
+skopsModels/
+
+# Archivos generados por tests
+test_outputs/
+*.tmp
+
+# macOS
+.DS_Store
