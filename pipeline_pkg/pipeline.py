@@ -1,13 +1,11 @@
 import pandas as pd
-from sklearn.datasets import load_wine
-from sklearn.preprocessing import StandardScaler
+from .modelo import Modelo
+from .operaciones import Operaciones
+from .datos import CargarDatos
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression 
-from sklearn.svm import SVC 
-from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import classification_report
 import skops.io as sio
-from .decoradores import controlTiempo, datetime, time, pasar_a_txt, log_exceptions
+from .decoradores import time, pasar_a_txt
 import logging
 import os
 
@@ -19,102 +17,6 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-
-# =========================
-# DATOS
-# =========================
-class CargarDatos:
-
-    @staticmethod
-    @log_exceptions
-    @controlTiempo
-    def cargar_datos():
-        return load_wine()
-
-    @staticmethod
-    @log_exceptions
-    @controlTiempo
-    def carga_df(wine_data):
-        return pd.DataFrame(wine_data.data, columns=wine_data.feature_names)
-
-    @staticmethod    
-    def registrar_predicciones(model, y_test, preds):
-        try:
-            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            with open('Model_data/data_log.txt', 'a') as f:
-                f.write(f"[{now}] {model} Results:\n{classification_report(y_test, preds)}\n\n")
-        except Exception:
-            logging.exception("Error al registrar predicciones")
-
-
-# =========================
-# OPERACIONES ML
-# =========================
-class Operaciones:
-
-    @staticmethod
-    @controlTiempo
-    def procesamiento_datos(wine_df, wine_data):
-        X = wine_df[wine_data.feature_names].copy()
-        y = wine_df["target"].copy()
-        return X, y
-
-    @staticmethod
-    @controlTiempo
-    @staticmethod
-    def instanciar_escalas(X):
-        scaler = StandardScaler()
-
-        if hasattr(X, "values"):
-            X = X.values
-
-        X_scaled = scaler.fit_transform(X)
-        return X_scaled, scaler
-
-    @staticmethod
-    @controlTiempo
-    def instanciar_modelos():
-        return (
-            LogisticRegression(),
-            SVC(),
-            DecisionTreeClassifier()
-        )
-
-    @staticmethod
-    @controlTiempo
-    def entrenar_modelos(logreg, svm, tree, X_train, y_train):
-        logreg.fit(X_train, y_train)
-        svm.fit(X_train, y_train)
-        tree.fit(X_train, y_train)
-        return logreg, svm, tree
-
-
-# =========================
-# MODELO SERIALIZADO
-# =========================
-class Modelo:
-
-    def __init__(self, nombre, ruta):
-        self.nombre = nombre
-        self.ruta = ruta
-
-    @staticmethod
-    @controlTiempo
-    def comprobar_tipo_fichero(**kwargs):
-        try:
-            return sio.get_untrusted_types(**kwargs)
-        except FileNotFoundError:
-            return []
-
-    @staticmethod
-    @controlTiempo
-    def cargar_modelo(ruta, vector_types):
-        return sio.load(ruta, trusted=vector_types)
-
-
-# =========================
-# PIPELINE
-# =========================
 def pipeline_entrenamiento():
 
     t0 = time.time()
@@ -143,6 +45,14 @@ def pipeline_entrenamiento():
         X_train, y_train
     )
 
+    pred_logreg = logreg.predict(X_test)
+    pred_svm = svm.predict(X_test)
+    pred_tree = tree.predict(X_test)
+
+    CargarDatos.registrar_predicciones("Logistic Regression", y_test, pred_logreg)
+    CargarDatos.registrar_predicciones("Support Vector Machine", y_test, pred_svm)
+    CargarDatos.registrar_predicciones("Decision Tree", y_test, pred_tree)
+
     t3 = time.time()
 
     print(f"Carga datos: {t1 - t0:.4f}s")
@@ -161,17 +71,7 @@ Entrenamiento: {t3 - t2:.4f}s
         "tree": tree
     }, X_test, y_test
 
-
-# =========================
-# MENÚ
-# =========================
-def main():
-
-    modelo_cargado = None
-    modelos_entrenados = None
-    X_test = None
-    y_test = None
-
+def menu():
     while True:
 
         print("\n1. Entrenar modelos")
@@ -233,6 +133,13 @@ def main():
 
             case _:
                 print("Opción no válida")
+
+def main():
+    modelo_cargado = None
+    modelos_entrenados = None
+    X_test = None
+    y_test = None
+    menu()
 
 
 if __name__ == "__main__":
