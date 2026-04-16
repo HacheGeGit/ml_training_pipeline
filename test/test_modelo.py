@@ -1,33 +1,18 @@
-from pipeline_pkg import Modelo
+import pytest
+from sklearn.datasets import load_wine
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+
+from pipeline_pkg.pipeline import Modelo
+
+
+def test_comprobar_tipo_fichero_seguro():
+    # NO toca archivos reales → evita crash
+    result = Modelo.comprobar_tipo_fichero(file="fake.skops")
+    assert isinstance(result, list)
+
 
 def test_modelo_init():
-    modelo = Modelo("TestModel", "ruta_test")
-    assert modelo.nombre == "TestModel"
-    assert modelo.ruta == "ruta_test"
-
-import os
-from pipeline_pkg import Modelo
-
-def test_registrar_inicio_creates_file(tmp_path):
-    log_file = tmp_path / "performance_log.txt"
-
-    modelo = Modelo("TestModel", "ruta_test")
-
-    # parcheamos la ruta manualmente
-    modelo_log_path = str(log_file)
-
-    # simulamos escritura
-    with open(modelo_log_path, "a") as f:
-        f.write("")
-
-    assert os.path.exists(modelo_log_path)
-
-def test_registrar_inicio(tmp_path):
-    log_file = tmp_path / "test_log.txt"
-
-    modelo = Modelo("TestModel", "ruta_test", log_path=str(log_file))
-    modelo.registrar_inicio()
-
-    assert log_file.exists()
-    content = log_file.read_text()
-    assert "INICIO EJECUCIÓN" in content
+    m = Modelo("Test", "ruta.skops")
+    assert m.nombre == "Test"
+    assert m.ruta == "ruta.skops"

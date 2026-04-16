@@ -34,7 +34,10 @@ Esto instalará:
     -Todas las dependencias definidas en pyproject.toml
 
 ## Uso
-
+Hacer which python en terminal.
+Si python3:
+python3 -m pipeline_pkg.pipeline
+Si pyhton:
 python -m pipeline_pkg.pipeline
 
 El flujo de ejecución es el siguiente:

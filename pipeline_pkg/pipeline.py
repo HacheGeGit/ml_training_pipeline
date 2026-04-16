@@ -7,126 +7,237 @@ from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import classification_report
 import skops.io as sio
-from .decoradores import controlTiempo, datetime, time, pasar_a_txt
+from .decoradores import controlTiempo, datetime, time, pasar_a_txt, log_exceptions
+import logging
+import os
 
+os.makedirs("logs/errores", exist_ok=True)
+
+logging.basicConfig(
+    filename="logs/errores/app_errors.log",
+    level=logging.ERROR,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+
+# =========================
+# DATOS
+# =========================
 class CargarDatos:
-    def __init__(self, datos):
-        self.datos = datos
 
     @staticmethod
+    @log_exceptions
     @controlTiempo
     def cargar_datos():
-         wine_data = load_wine()
-         return wine_data
-    
+        return load_wine()
+
     @staticmethod
+    @log_exceptions
     @controlTiempo
     def carga_df(wine_data):
-        wine_df = pd.DataFrame(wine_data.data, columns=wine_data.feature_names)
-        return wine_df
+        return pd.DataFrame(wine_data.data, columns=wine_data.feature_names)
+
     @staticmethod    
     def registrar_predicciones(model, y_test, preds):
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        with open('Model_data/data_log.txt', 'a') as f:
-            f.write(f"[{now}]{model} Results:\n{classification_report(y_test, preds)}\n\n")
-        
+        try:
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            with open('Model_data/data_log.txt', 'a') as f:
+                f.write(f"[{now}] {model} Results:\n{classification_report(y_test, preds)}\n\n")
+        except Exception:
+            logging.exception("Error al registrar predicciones")
+
+
+# =========================
+# OPERACIONES ML
+# =========================
 class Operaciones:
+
     @staticmethod
     @controlTiempo
-    def mostrar_info(wine_df):
-        wine_df.info()
-        wine_df.describe()
-        wine_df.head()
-        wine_df.tail()
-    
-    @staticmethod
-    @controlTiempo
-    def procesamiento_datos(wine_df):
+    def procesamiento_datos(wine_df, wine_data):
         X = wine_df[wine_data.feature_names].copy()
-        y = wine_df["target"].copy()  
+        y = wine_df["target"].copy()
         return X, y
-    
+
     @staticmethod
     @controlTiempo
+    @staticmethod
     def instanciar_escalas(X):
         scaler = StandardScaler()
-        scaler.fit(X)
-        # Transformamos las características
-        X_scaled = scaler.transform(X.values)
-        return X_scaled
-    
+
+        if hasattr(X, "values"):
+            X = X.values
+
+        X_scaled = scaler.fit_transform(X)
+        return X_scaled, scaler
+
     @staticmethod
     @controlTiempo
     def instanciar_modelos():
-        logistic_regression = LogisticRegression() 
-        svm = SVC() 
-        tree = DecisionTreeClassifier()
-        return logistic_regression, svm, tree
-    
-    @staticmethod
-    @controlTiempo
-    def entrenar_modelos(logistic_regression, svm, tree):
-        logistic_regression.fit(X_train_scaled, y_train) 
-        svm.fit(X_train_scaled, y_train) 
-        tree.fit(X_train_scaled, y_train)
-        return logistic_regression, svm, tree
-    
-    @staticmethod
-    @controlTiempo
-    def hacer_predicciones(X_test_scaled):
-        log_reg_preds = logistic_regression.predict(X_test_scaled) 
-        svm_preds = svm.predict(X_test_scaled) 
-        tree_preds = tree.predict(X_test_scaled)
-        return log_reg_preds, svm_preds, tree_preds
-    
-    @staticmethod
-    @controlTiempo
-    def guardar_modelo(modelo,ruta):
-        sio.dump(modelo, ruta)
-        return ruta
+        return (
+            LogisticRegression(),
+            SVC(),
+            DecisionTreeClassifier()
+        )
 
+    @staticmethod
+    @controlTiempo
+    def entrenar_modelos(logreg, svm, tree, X_train, y_train):
+        logreg.fit(X_train, y_train)
+        svm.fit(X_train, y_train)
+        tree.fit(X_train, y_train)
+        return logreg, svm, tree
+
+
+# =========================
+# MODELO SERIALIZADO
+# =========================
 class Modelo:
-    def __init__(self, nombre, ruta, log_path="logs/performance_log.txt", preds_path="Model_data/svm_preds.txt"):
+
+    def __init__(self, nombre, ruta):
         self.nombre = nombre
         self.ruta = ruta
-        self.log_path = log_path
-        self.preds_path = preds_path
 
     @staticmethod
     @controlTiempo
     def comprobar_tipo_fichero(**kwargs):
-        vector_types = sio.get_untrusted_types(**kwargs)
-        return vector_types
-    
-    @staticmethod
-    @controlTiempo
-    def cargar_modelo(VECTOR_MACHINE, vector_types):
-        modelVectorMachine = sio.load(VECTOR_MACHINE, trusted=vector_types)
-        return modelVectorMachine
-    
-    @staticmethod
-    @controlTiempo
-    def comprobar_modelo(X_test_scaled, modelVectorMachine):
-        svm_preds = modelVectorMachine.predict(X_test_scaled)
-        return svm_preds
-    
-    def registrar_inicio(self):
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        with open(self.log_path, "a") as f:
-            f.write("\n" + "="*50 + "\n")
-            f.write(f"INICIO EJECUCIÓN: {now} {self.nombre}\n")
-            f.write("="*50 + "\n\n")
-    
-    def resgistrar_svm_preds(self, svm_preds, y_test):
-         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-         with open(self.preds_path, "a") as f:
-            f.write(f"[{now}]Support Vector Machine Results:\n{classification_report(y_test, svm_preds)}\n\n")
-        
-modelo_wine = Modelo("Modelo Wine","./skopsModels/VectorMachine.skops")   
-modelo_wine.registrar_inicio()    
-start_total = time.time()
+        try:
+            return sio.get_untrusted_types(**kwargs)
+        except FileNotFoundError:
+            return []
 
-#Cargamos los datos en memoria
+    @staticmethod
+    @controlTiempo
+    def cargar_modelo(ruta, vector_types):
+        return sio.load(ruta, trusted=vector_types)
+
+
+# =========================
+# PIPELINE
+# =========================
+def pipeline_entrenamiento():
+
+    t0 = time.time()
+
+    wine_data = CargarDatos.cargar_datos()
+    wine_df = CargarDatos.carga_df(wine_data)
+
+    wine_df["target"] = wine_data.target
+
+    t1 = time.time()
+
+    X, y = Operaciones.procesamiento_datos(wine_df, wine_data)
+
+    X_scaled, scaler = Operaciones.instanciar_escalas(X)
+
+    t2 = time.time()
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X_scaled, y, train_size=0.7, random_state=25
+    )
+
+    logreg, svm, tree = Operaciones.instanciar_modelos()
+
+    logreg, svm, tree = Operaciones.entrenar_modelos(
+        logreg, svm, tree,
+        X_train, y_train
+    )
+
+    t3 = time.time()
+
+    print(f"Carga datos: {t1 - t0:.4f}s")
+    print(f"Preprocesado: {t2 - t1:.4f}s")
+    print(f"Entrenamiento: {t3 - t2:.4f}s")
+
+    pasar_a_txt(f"""
+Carga datos: {t1 - t0:.4f}s
+Preprocesado: {t2 - t1:.4f}s
+Entrenamiento: {t3 - t2:.4f}s
+""")
+
+    return {
+        "logreg": logreg,
+        "svm": svm,
+        "tree": tree
+    }, X_test, y_test
+
+
+# =========================
+# MENÚ
+# =========================
+def main():
+
+    modelo_cargado = None
+    modelos_entrenados = None
+    X_test = None
+    y_test = None
+
+    while True:
+
+        print("\n1. Entrenar modelos")
+        print("2. Cargar modelo entrenado")
+        print("3. Evaluar modelo")
+        print("4. Salir")
+
+        opcion = input("\nSelecciona opción: ")
+
+        match opcion:
+
+            case "1":
+                print("Entrenando modelos...")
+                modelos_entrenados, X_test, y_test = pipeline_entrenamiento()
+                print("Entrenamiento completado")
+
+            case "2":
+                ruta = input("Introduce ruta del modelo: ")
+                vector_types = Modelo.comprobar_tipo_fichero(file=ruta)
+                modelo_cargado = Modelo.cargar_modelo(ruta, vector_types)
+                print("Modelo cargado correctamente")
+
+            case "3":
+
+                if modelos_entrenados is None and modelo_cargado is None:
+                    print("No hay modelos disponibles")
+                    continue
+
+                print("Elige modelo: (1)logreg / (2)svm / (3)tree")
+                try:
+                    num = int(input("Modelo: "))
+                    match num:
+                        case 1:
+                            nombre = 'logreg'
+                        case 2:
+                            nombre = 'svm'
+                        case 3: 
+                            nombre = 'tree'
+                        case _:
+                            print('Elección inválida.')
+                except ValueError:
+                    print("Debes introducir un número")
+                    
+                if modelos_entrenados and nombre in modelos_entrenados:
+                    modelo = modelos_entrenados[nombre]
+                    preds = modelo.predict(X_test)
+                    print(classification_report(y_test, preds))
+
+                elif modelo_cargado:
+                    preds = modelo_cargado.predict(X_test)
+                    print(classification_report(y_test, preds))
+
+                else:
+                    print("Modelo no encontrado")
+
+            case "4":
+                print("Saliendo...")
+                break
+
+            case _:
+                print("Opción no válida")
+
+
+if __name__ == "__main__":
+    main()
+'''#Cargamos los datos en memoria
 wine_data = CargarDatos.cargar_datos()
 
 # Convertimos los datos de wine_data a pandas dataframe
@@ -217,4 +328,5 @@ modelo_wine.resgistrar_svm_preds(svm_preds, y_test)
 end_total = time.time()
 total = end_total - start_total
 print(f"\nDuración total ejecución: {total:.6f} segundos.\n")
-pasar_a_txt(f"Duración total ejecución: {total:.6f} segundos.")
+pasar_a_txt(f"Duración total ejecución: {total:.6f} segundos.")'''
+

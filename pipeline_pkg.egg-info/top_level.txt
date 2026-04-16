@@ -1,0 +1,6 @@
+DataFrames
+Model_data
+logs
+pipeline_pkg
+skopsModels
+test

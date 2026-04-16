@@ -1,0 +1,13 @@
+README.txt
+pyproject.toml
+pipeline_pkg/__init__.py
+pipeline_pkg/decoradores.py
+pipeline_pkg/pipeline.py
+pipeline_pkg.egg-info/PKG-INFO
+pipeline_pkg.egg-info/SOURCES.txt
+pipeline_pkg.egg-info/dependency_links.txt
+pipeline_pkg.egg-info/requires.txt
+pipeline_pkg.egg-info/top_level.txt
+test/test_comprobar_modelo.py
+test/test_modelo.py
+test/test_pipeline.py

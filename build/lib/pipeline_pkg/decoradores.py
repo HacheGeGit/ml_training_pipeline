@@ -1,5 +1,4 @@
 import time
-import logging
 from functools import wraps
 from datetime import datetime
 
@@ -19,12 +18,3 @@ def pasar_a_txt(text):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open('logs/performance_log.txt', 'a') as f:
         f.write(f'[{now}]{text}')
-
-def log_exceptions(func):
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            logging.exception(f"Error en {func.__name__}")
-            raise
-    return wrapper
