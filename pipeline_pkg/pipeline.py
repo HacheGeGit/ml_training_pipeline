@@ -214,7 +214,7 @@ def main():
                             print('Elección inválida.')
                 except ValueError:
                     print("Debes introducir un número")
-                    
+
                 if modelos_entrenados and nombre in modelos_entrenados:
                     modelo = modelos_entrenados[nombre]
                     preds = modelo.predict(X_test)
@@ -237,96 +237,5 @@ def main():
 
 if __name__ == "__main__":
     main()
-'''#Cargamos los datos en memoria
-wine_data = CargarDatos.cargar_datos()
 
-# Convertimos los datos de wine_data a pandas dataframe
-wine_df = CargarDatos.carga_df(wine_data)
-
-# Añadimos la table con los datos
-wine_df["target"] = wine_data.target
-wine_df.to_csv('DataFrames/winedf.csv', index=False)
-# Previsualizamos los datos
-Operaciones.mostrar_info(wine_df)
-
-#Procesamiento de datos
-# Dividimos los datos en características y etiquetas
-X, y = Operaciones.procesamiento_datos(wine_df)
-
-# Instanciamos las escalas y ajustamos las características
-# Transformamos las características
-X_scaled = Operaciones.instanciar_escalas(X)
-
-X_scaled_df = pd.DataFrame(X_scaled, columns=X.columns)
-X_scaled_df.to_csv('DataFrames/X_scaled.csv', index=False)
-
-# Comprobamos la primera instancia
-print(X_scaled[0])
-"""
-[ 1.51861254 -0.5622498 0.23205254 -1.16959318 1.91390522 0.80899739
-1.03481896 -0.65956311 1.22488398 0.25171685 0.36217728 1.84791957
-1.01300893]
-"""
-
-# Dividimos los datos de entrenamiento y de prueba
-X_train_scaled, X_test_scaled, y_train, y_test = train_test_split(X_scaled,y,train_size=.7, random_state=25)
-
-# Comprobamos que la division se ha realizado correctamente
-print(f"Train size: {round(len(X_train_scaled) / len(X) * 100)}% \n\
-Test size: {round(len(X_test_scaled) / len(X) * 100)}%")
-""" Result del print:
-Train size: 70%
-Test size: 30%
-"""
-print()
-
-# Instanciamos los modelos 
-logistic_regression, svm, tree = Operaciones.instanciar_modelos()
-
-# Entrenamos los modelos
-Operaciones.entrenar_modelos(logistic_regression, svm, tree)
-
-# Hacemos predicciones con cada modelo 
-log_reg_preds, svm_preds, tree_preds = Operaciones.hacer_predicciones(X_test_scaled) 
-
-# Almacenamos los modelos de predicción en un diccionario. 
-# Esto hace más fácil la iteración de cada modelo e imprimir los resultados.
-model_preds = {
-    "Logistic Regression": log_reg_preds,
-    "Support Vector Machine": svm_preds,
-    "Decision Tree": tree_preds
-}
-
-for model, preds in model_preds.items():
-    print(f"{model} Results:\n{classification_report(y_test, preds)}", sep="\n\n")
-    CargarDatos.registrar_predicciones(model, y_test, preds)
-
-
-# Una vez entrenado y evaluado cualquier modelo, podemos guardarlo para su posterior uso o migración
-# Para ello utilizaremos la librería skops.io y guardaremos el modelo en un fichero skops
-ruta = modelo_wine.ruta
-VECTOR_MACHINE = Operaciones.guardar_modelo(svm, ruta)
-
-"""
-****** Cargar de nuevo el modelo y comprobar que funciona correctamente
-"""
-
-# Investigar el tipo de fichero
-
-vector_types = Modelo.comprobar_tipo_fichero(file=VECTOR_MACHINE)
-
-# Y cargarlo solo si se confía en él
-
-modelVectorMachine = Modelo.cargar_modelo(VECTOR_MACHINE, vector_types)
-
-# Comprobamos el modelo después de cargarlo, vemos que con los mismos datos de prueba predice lo mismo que anteriormente
-
-svm_preds = Modelo.comprobar_modelo(X_test_scaled, modelVectorMachine)
-
-print(f"Support Vector Machine Results:\n{classification_report(y_test, svm_preds)}", sep="\n\n")
-modelo_wine.resgistrar_svm_preds(svm_preds, y_test)
-end_total = time.time()
-total = end_total - start_total
-print(f"\nDuración total ejecución: {total:.6f} segundos.\n")
-pasar_a_txt(f"Duración total ejecución: {total:.6f} segundos.")'''
 
