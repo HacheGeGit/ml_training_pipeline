@@ -3,6 +3,7 @@ from sklearn.datasets import load_wine
 from sklearn.metrics import classification_report
 from .decoradores import controlTiempo, datetime, log_exceptions
 import logging
+import os
 
 class CargarDatos:
 
@@ -21,8 +22,14 @@ class CargarDatos:
     @staticmethod    
     def registrar_predicciones(model, y_test, preds):
         try:
+            os.makedirs("Model_data", exist_ok=True)
+
             now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            with open('Model_data/data_log.txt', 'a') as f:
-                f.write(f"[{now}] {model} Results:\n{classification_report(y_test, preds)}\n\n")
+
+            with open("Model_data/data_log.txt", "a") as f:
+                f.write(f"\n[{now}]{model} Results:\n")
+                f.write(classification_report(y_test, preds))
+                f.write("\n")
+
         except Exception:
             logging.exception("Error al registrar predicciones")
