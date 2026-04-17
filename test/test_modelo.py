@@ -7,7 +7,6 @@ from pipeline_pkg.pipeline import Modelo
 
 
 def test_comprobar_tipo_fichero_seguro():
-    # NO toca archivos reales → evita crash
     result = Modelo.comprobar_tipo_fichero(file="fake.skops")
     assert isinstance(result, list)
 
